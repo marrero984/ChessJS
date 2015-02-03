@@ -3,8 +3,7 @@
 // Black pawns always move down, white pawns always up
 // Transform function changes piece type
 
-var ranks = ['pawn','bishop','knight','rook','queen','king'],
-	sides = ['white','black'];
+
 
 (function () {	
 	var board = document.getElementById('board');
@@ -44,11 +43,9 @@ function Piece (side, rank) {
 	this. history = [];
 	this.move = function (v, h) {
 		// Verify that requested move does not leave the board before updating position
-		if (!outOfRange(this.vertical + v)) {
-			this.vertical += v;
-		}
-		if (!outOfRange(this.horizontal + h)) {
-			this.horizontal += h;
+		if (inRange(v) && inRange(h)) {
+			this.vertical = v;
+			this.horizontal = h;
 		}
 		// TODO: update history after move (decide what history should look like)
 	}
@@ -73,9 +70,8 @@ function Piece (side, rank) {
 	}
 }
 
-function outOfRange (i) {
-	// Returns true if out of range
-	if (i < 0 || i >= 8) {
+function inRange (i) {
+	if (i >= 0 || i < 8) {
 		return true;
 	} else {
 		return false;
@@ -85,8 +81,6 @@ function outOfRange (i) {
 // Tests
  function tests () {
  	var whitePawn1 = new Piece('white','pawn');
-	console.log(whitePawn1.active);
-	
-	whitePawn1.select();
-	console.log(whitePawn1.active);
+ 	whitePawn1.move(1, 0);
+	console.log(whitePawn1);
  }
