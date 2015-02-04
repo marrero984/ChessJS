@@ -3,21 +3,23 @@
 // Black pawns always move down, white pawns always up
 // Transform function changes piece type
 
-
+// The grid is available to the whole script and stores only the individual cells
+// The board returned by createBoard() is the full set of elements needed for display and used only on initialization
+var grid = [];
 
 (function () {	
-	var board = document.getElementById('board');
-	board.appendChild(createBoard());
+	document.getElementById('board').appendChild(Board());
 
 	// Tests TODO: remove
 	tests();
 })();
 
-function createBoard () {
-	var grid = document.createElement('div');
-	grid.setAttribute('class','grid');
+function Board () {
+	var board = document.createElement('div');
+	board.setAttribute('class','grid');
 	for (var i = 0; i < 8; i++) {
-		var row = document.createElement('div');
+		var row = document.createElement('div'),
+			gridRow = [];
 		row.setAttribute('class','row')
 		for (var j = 0; j < 8; j++) {
 			var cell = document.createElement('div');
@@ -27,33 +29,31 @@ function createBoard () {
 				cell.setAttribute('class', 'cell');
 			}
 			row.appendChild(cell);
+			gridRow.push(cell);
 		}
-		grid.appendChild(row);
+		board.appendChild(row);
+		grid.push(gridRow);
 	}
-	return grid;
+	return board;
 }
 
 function Piece (side, rank) {
 	this.rank = rank;
-	this.inplay = true;
-	this.active = false;
 	this.side = side;
 	this.vertical = 0;
 	this.horizontal = 0;
-	this. history = [];
+	this.element = pieceElement(this.side, this.rank);
 	this.move = function (v, h) {
 		// Verify that requested move does not leave the board before updating position
 		if (inRange(v) && inRange(h)) {
 			this.vertical = v;
 			this.horizontal = h;
 		}
-		// TODO: update history after move (decide what history should look like)
+		this.display();
 	}
 	this.display = function () {
-		// Grid is not global; test if Piece instance can find grid object
-		// TODO: Copy original element into new location
-		// 	Remove from old location
-		// 	Use childNodes
+		grid[this.vertical][this.horizontal]
+			.appendChild(this.element);
 	}
 	this.upgrade = function (newRank) {
 		if (this.rank === 'pawn') {
@@ -62,14 +62,46 @@ function Piece (side, rank) {
 			console.log('Can only upgrade pawns');
 		}
 	}
-	this.remove = function () {
-		this.inplay = false;
-	}
-	this.select = function () {
-		this.active === true ? this.active = false : this.active = true;
-	}
 }
 
+// See if possible to move this function to inside the Piece object
+function pieceElement (side, rank) {
+	var e = document.createElement('div');
+	e.setAttribute('class','piece ' + side);
+	e.innerHTML = 'P'
+	return e;
+}
+
+//Returns pieces object that contains 32 Piece objest
+function createPieces () {
+	var pieces = {};
+	var sides = ['white','black'];
+	var ranks = {
+		'Pawn': 8,
+		'Bishop': 2,
+		'Knight': 2,
+		'Rook': 2,
+		'Queen': 1,
+		'King': 1
+	};
+
+	for (var rank in ranks) {
+		creationLoop(rank, ranks[rank]);
+	}
+
+	function creationLoop (rank, x) {
+		for (var i = 0; i < 2; i++) {
+			var side = sides[i];
+			for (var j = 1; j <= x; j++) {
+				pieces[side + rank + j] = new Piece(side, rank);
+			}
+		}
+	}
+
+	return pieces;
+}
+
+//Utility functions
 function inRange (i) {
 	if (i >= 0 || i < 8) {
 		return true;
@@ -79,8 +111,6 @@ function inRange (i) {
 }
 
 // Tests
- function tests () {
- 	var whitePawn1 = new Piece('white','pawn');
- 	whitePawn1.move(1, 0);
-	console.log(whitePawn1);
- }
+function tests () {
+	console.log(createPieces());
+}
