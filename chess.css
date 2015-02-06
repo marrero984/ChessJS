@@ -4,7 +4,7 @@
 body {
 	font-family: "Raleway", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
 	font-weight: bolder;
-	font-size: 4.0em;
+	font-size: 3.5em;
 }
 
 .grid {
@@ -13,38 +13,38 @@ body {
 	max-width: 600px;
 }
 
-.row {
+.grid > div {
 	display: flex;
 	width: 100%;
 	border-left: 1px solid #555;
 	border-right: 1px solid #555;
 }
 
-	.row:first-child {
+	.grid > div:first-child {
 		border-top: 1px solid #555;
 	}
 
-	.row:nth-child(8) {
+	.grid > div:last-child {
 		border-bottom: 1px solid #555;
 	}
 
-.cell {
-	position: relative;
-	flex: 1;
-	background-color: #ecf0f1;
-	display: inline-block;
-}
+		.grid > div > div {
+			position: relative;
+			flex: 1;
+			background-color: #ecf0f1;
+			display: inline-block;
+		}
 
-	.cell:before {
-		content: "";
-		display: block;
-		padding-top: 100%; 	/* initial ratio of 1:1*/
-	}
+			.grid > div > div:before {
+				content: "";
+				display: block;
+				padding-top: 100%; 	/* initial ratio of 1:1*/
+			}
 
-	.cell.alt {
-		/*background-color: #34495e;*/
-		background-color: black;
-	}
+			.grid > div:nth-child(odd) > div:nth-child(odd),
+			.grid > div:nth-child(even) > div:nth-child(even) {
+				background-color: black;
+			}
 
 .piece {
 	position: absolute;
@@ -55,10 +55,12 @@ body {
 	text-align: center;
 	margin: auto;
 	cursor: pointer;
+	border-radius: 50%;
 }
 
 	.piece.black {
 		color: #1abc9c;
+		border-color: #1abc9c;
 	}
 
 	.piece.white {
