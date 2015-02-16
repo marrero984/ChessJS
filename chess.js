@@ -1,147 +1,233 @@
 // Black pawns always move down, white pawns always up
 
-// The grid is available to the whole script and stores only the individual cells
-// The board returned by createBoard() is the full set of elements needed for display and used only on initialization
-var grid = []; // Must be initialized before anonymous function call
-var pieces= {};
 var sides = ['white','black'];
 var ranks = {
 	'Pawn': {
 		'count': 8,
 		'elementText': 'P',
-		'initHorizontal': [0, 1, 2, 3, 4, 5, 6, 7]
+		'black': {
+			'initPostions': {
+				'vertical': [1, 1, 1, 1, 1, 1, 1, 1],
+				'horizontal': [0, 1, 2, 3, 4, 5, 6, 7]
+			},
+			'active': [true, true, true, true, true, true, true, true]
+		},
+		'white': {
+			'initPostions': {
+				'vertical': [6, 6, 6, 6, 6, 6, 6, 6],
+				'horizontal': [0, 1, 2, 3, 4, 5, 6, 7]
+			},
+			'active': [true, true, true, true, true, true, true, true]
+		}
 	},
 	'Bishop': {
 		'count': 2,
 		'elementText': 'B',
-		'initHorizontal': [2, 5]
+		'black': {
+			'initPostions': {
+				'vertical': [0, 0,],
+				'horizontal': [2, 5]
+			},
+			'active': [true, true]
+		},
+		'white': {
+			'initPostions': {
+				'vertical': [7, 7],
+				'horizontal': [2, 5]
+			},
+			'active': [true, true]
+		}
 	},
 	'Knight': {
 		'count': 2,
 		'elementText': 'Kn',
-		'initHorizontal': [1, 6]
+		'black': {
+			'initPostions': {
+				'vertical': [0, 0],
+				'horizontal': [1, 6]
+			},
+			'active': [true, true]
+		},
+		'white': {
+			'initPostions': {
+				'vertical': [7, 7],
+				'horizontal': [1, 6]
+			},
+			'active': [true, true]
+		}
 	},
 	'Rook': {
 		'count': 2,
 		'elementText': 'R',
-		'initHorizontal': [0, 7]
+		'black': {
+			'initPostions': {
+				'vertical': [0, 0],
+				'horizontal': [0, 7]
+			},
+			'active': [true, true]
+		},
+		'white': {
+			'initPostions': {
+				'vertical': [7, 7],
+				'horizontal': [0, 7]
+			},
+			'active': [true, true]
+		}
 	},
 	'Queen': {
 		'count': 1,
 		'elementText': 'Q',
-		'initHorizontal': [4]
+		'black': {
+			'initPostions': {
+				'vertical': [0],
+				'horizontal': [3]
+			},
+			'active': [true]
+		},
+		'white': {
+			'initPostions': {
+				'vertical': [7],
+				'horizontal': [3]
+			},
+			'active': [true]
+		}
 	},
 	'King': {
 		'count': 1,
 		'elementText': 'K',
-		'initHorizontal': [3]
+		'black': {
+			'initPostions': {
+				'vertical': [0],
+				'horizontal': [4]
+			},
+			'active': [true]
+		},
+		'white': {
+			'initPostions': {
+				'vertical': [7],
+				'horizontal': [4]
+			},
+			'active': [true]
+		}
 	}
 };
 
-(function () {	
-	document.getElementById('board').appendChild(Board());
-	createPieces();
+(function () {
+	var board = new Board();
+	board.embed('board');
+	board.addPieces();
+	board.removePiece(board.pieces['whitePawn1']);
 
-	// Tests TODO: remove
-	console.log(pieces);
-	console.log(pieces['whitePawn1']);
-	pieces['whitePawn1'].display();
-	for (var piece in pieces) {
-		pieces[piece].display();
-	}
+	// TODO: Remove console logs
+	console.log(board.pieces);
 })();
 
 function Board () {
-	var board = document.createElement('div');
-	board.setAttribute('class','grid');
-	for (var i = 0; i < 8; i++) {
-		var row = document.createElement('div'),
-			gridRow = [];
-		for (var j = 0; j < 8; j++) {
-			var cell = document.createElement('div');
-			row.appendChild(cell);
-			gridRow.push(cell);
+	this.pieces = {};
+	this.grid = [];
+	// Attaches board elements to element feed in parameter
+	this.embed = function (el) {
+		var e = document.getElementById(el);
+		if (e !== null){
+			var b = createBoard();		
+			this.grid = getGrid(b);
+			e.appendChild(b);			
 		}
-		board.appendChild(row);
-		grid.push(gridRow);
-	}
-	return board;
+	};
+	this.addPieces = function () {
+		// Check if pieces already exist
+		if (Object.keys(this.pieces).length === 0) {
+			this.pieces = createPieces();
+		}
+
+		for (var piece in this.pieces) {
+			if (this.pieces[piece].active) {
+				this.displayPiece(this.pieces[piece]);
+			}
+		}
+	};
+	this.displayPiece = function (p) {
+		this.grid[p.vertical][p.horizontal].appendChild(p.element);
+	};
+	this.removePiece = function (p) {
+		this.grid[p.vertical][p.horizontal].removeChild();
+	};
 }
 
-function Piece (side, rank) {
+function Piece (side, rank, active, v, h) {
 	this.rank = rank;
 	this.side = side;
-	this.vertical = 0;
-	this.horizontal = 0;
-	this.element = pieceElement(this.side, this.rank);
-	this.move = function (v, h) {
-		// Verify that requested move does not leave the board before updating position
-		if (inRange(v) && inRange(h)) {
-			this.vertical = v;
-			this.horizontal = h;
-		}
-		this.display();
-	}
-	this.display = function () {
-		grid[this.vertical][this.horizontal]
-			.appendChild(this.element);
-	}
+	this.active = active;
+	this.vertical = v;
+	this.horizontal = h;
+	this.element = createPieceElement(this.side, this.rank);
 	this.upgrade = function (newRank) {
 		if (this.rank === 'pawn') {
 			this.rank = newRank;
-			this.element = pieceElement(this.side, this.rank);
+			this.element = createPieceElement(this.side, this.rank);
 			this.display();
 		} else {
 			console.log('Can only upgrade pawns');
 		}
-	}
-
-	//Does not need to be accessible outside of the object
-	function pieceElement (side, rank) {
-		var e = document.createElement('div');
-		e.setAttribute('class','piece ' + side);
-		e.innerHTML = ranks[rank].elementText;
-		return e;
-	}
+	};
 }
 
-// Returns pieces object that contains 32 Piece objects
-// See if possible to move pieces into Board object
+// Returns object of 32 initialized Piece objects
 function createPieces () {
+	var p = {};
 	for (var rank in ranks) {
 		for (var i = 0; i < 2; i++) {
 			var side = sides[i];
-			for (var j = 1; j <= ranks[rank].count; j++) {
-				var name = side + rank + j;
-				pieces[name] = new Piece(side, rank);
-				pieces[name].vertical = initVertical(side, rank);
-				pieces[name].horizontal = ranks[rank].initHorizontal[j - 1];
+			for (var j = 0; j < ranks[rank].count; j++) {
+				var name = side + rank + j,
+					rs = ranks[rank][side],
+					active = rs.active[j],
+					v = rs.initPostions['vertical'][j],
+					h = rs.initPostions['horizontal'][j];
+				p[name] = new Piece(side, rank, active, v, h);
 			}
 		}
 	}
-
-	function initVertical (side, rank) {
-		var v;
-		if (rank === 'Pawn') {
-			if (side === 'white') {
-				v = 6;
-			} else {
-				v = 1;
-			}
-		} else {
-			if (side === 'white') {
-				v = 7;
-			} else {
-				v = 0;
-			}
-		}
-		return v;
-	}
-
-	return pieces;
+	return p;
 }
 
-//Utility functions
+// Functions that create HTML elements
+function createPieceElement (side, rank) {
+	var e = document.createElement('div');
+	e.setAttribute('class','piece ' + side);
+	e.innerHTML = ranks[rank].elementText;
+	return e;
+}
+
+function createBoard() {
+	var b = document.createElement('div');
+	b.setAttribute('class','grid');
+	for (var i = 0; i < 8; i++) {
+		var row = document.createElement('div');
+		for (var j = 0; j < 8; j++) {
+			var cell = document.createElement('div');
+			row.appendChild(cell);
+		}
+		b.appendChild(row);
+	}
+	return b;
+}
+// Returns just the cell elements from the board
+function getGrid (b) {
+	var g = [];
+	for (var i = 0; i < b.childNodes.length; i++) {
+		var r = b.childNodes[i],
+			row = [];
+		for (var j = 0; j < r.childNodes.length; j++) {
+			row.push(r.childNodes[j]);	
+		}
+		g.push(row);
+	}
+	return g;
+}
+// End functions that create HTML elements
+
+// Utility functions
 function inRange (i) {
 	if (i >= 0 || i < 8) {
 		return true;
@@ -149,3 +235,4 @@ function inRange (i) {
 		return false;
 	}
 }
+// End utility functions
