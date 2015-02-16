@@ -115,11 +115,13 @@ var ranks = {
 (function () {
 	var board = new Board();
 	board.embed('board');
-	board.addPieces();
-	board.removePiece(board.pieces['whitePawn1']);
+	board.init();
 
-	// TODO: Remove console logs
-	console.log(board.pieces);
+	// TODO: Remove these tests
+	loopThroughGrid(board.grid, function (cell) {
+		console.log(cell.occupied);
+	});
+	console.log('end');
 })();
 
 function Board () {
@@ -134,11 +136,15 @@ function Board () {
 			e.appendChild(b);			
 		}
 	};
-	this.addPieces = function () {
+	this.init = function () {
 		// Check if pieces already exist
 		if (Object.keys(this.pieces).length === 0) {
 			this.pieces = createPieces();
 		}
+		// Ensure all cells are set to unoccupied before displaying pieces
+		loopThroughGrid(this.grid, function (cell) {
+			cell.occupied = false;
+		});
 
 		for (var piece in this.pieces) {
 			if (this.pieces[piece].active) {
@@ -148,9 +154,14 @@ function Board () {
 	};
 	this.displayPiece = function (p) {
 		this.grid[p.vertical][p.horizontal].appendChild(p.element);
+		this.grid[p.vertical][p.horizontal].occupied = true;
 	};
 	this.removePiece = function (p) {
-		this.grid[p.vertical][p.horizontal].removeChild();
+		this.grid[p.vertical][p.horizontal].removeChild(p.element);
+		this.grid[p.vertical][p.horizontal].occupied = false;
+	};
+	this.inactivatePiece = function (p) {
+		p.active = false;
 	};
 }
 
@@ -165,30 +176,10 @@ function Piece (side, rank, active, v, h) {
 		if (this.rank === 'pawn') {
 			this.rank = newRank;
 			this.element = createPieceElement(this.side, this.rank);
-			this.display();
 		} else {
 			console.log('Can only upgrade pawns');
 		}
 	};
-}
-
-// Returns object of 32 initialized Piece objects
-function createPieces () {
-	var p = {};
-	for (var rank in ranks) {
-		for (var i = 0; i < 2; i++) {
-			var side = sides[i];
-			for (var j = 0; j < ranks[rank].count; j++) {
-				var name = side + rank + j,
-					rs = ranks[rank][side],
-					active = rs.active[j],
-					v = rs.initPostions['vertical'][j],
-					h = rs.initPostions['horizontal'][j];
-				p[name] = new Piece(side, rank, active, v, h);
-			}
-		}
-	}
-	return p;
 }
 
 // Functions that create HTML elements
@@ -212,6 +203,8 @@ function createBoard() {
 	}
 	return b;
 }
+// End functions that create HTML elements
+
 // Returns just the cell elements from the board
 function getGrid (b) {
 	var g = [];
@@ -219,13 +212,31 @@ function getGrid (b) {
 		var r = b.childNodes[i],
 			row = [];
 		for (var j = 0; j < r.childNodes.length; j++) {
-			row.push(r.childNodes[j]);	
+			row.push(r.childNodes[j]);
 		}
 		g.push(row);
 	}
 	return g;
 }
-// End functions that create HTML elements
+
+// Returns object of 32 initialized Piece objects
+function createPieces () {
+	var p = {};
+	for (var rank in ranks) {
+		for (var i = 0; i < 2; i++) {
+			var side = sides[i];
+			for (var j = 0; j < ranks[rank].count; j++) {
+				var name = side + rank + j,
+					rs = ranks[rank][side],
+					active = rs.active[j],
+					v = rs.initPostions['vertical'][j],
+					h = rs.initPostions['horizontal'][j];
+				p[name] = new Piece(side, rank, active, v, h);
+			}
+		}
+	}
+	return p;
+}
 
 // Utility functions
 function inRange (i) {
@@ -233,6 +244,15 @@ function inRange (i) {
 		return true;
 	} else {
 		return false;
+	}
+}
+
+function loopThroughGrid (grid, callback) {
+	for (var i = 0; i < grid.length; i++) {
+		var row = grid[i];
+		for (var j = 0; j < row.length; j++) {
+			callback(row[j]);
+		}
 	}
 }
 // End utility functions
