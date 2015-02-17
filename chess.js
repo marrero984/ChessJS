@@ -1,5 +1,7 @@
 // Black pawns always move down, white pawns always up
 
+// TODO: eliminate sides array if possible
+// TODO: move ranks object to external JSON file
 var sides = ['white','black'];
 var ranks = {
 	'Pawn': {
@@ -118,18 +120,16 @@ var ranks = {
 	board.init();
 
 	// TODO: Remove these tests
-	loopThroughGrid(board.grid, function (cell) {
-		console.log(cell.occupied);
-	});
 	console.log('end');
 })();
 
 function Board () {
 	this.pieces = {};
 	this.grid = [];
-	// Attaches board elements to element feed in parameter
-	this.embed = function (el) {
-		var e = document.getElementById(el);
+	this.activeCell = null;
+	// Attaches board elements to specified ID
+	this.embed = function (elementID) {
+		var e = document.getElementById(elementID);
 		if (e !== null){
 			var b = createBoard();		
 			this.grid = getGrid(b);
@@ -141,9 +141,27 @@ function Board () {
 		if (Object.keys(this.pieces).length === 0) {
 			this.pieces = createPieces();
 		}
+
+		// TODO: rename something
+		var something = this;
 		// Ensure all cells are set to unoccupied before displaying pieces
 		loopThroughGrid(this.grid, function (cell) {
-			cell.occupied = false;
+			cell.piece = null;
+			cell.selected = false;
+			cell.onclick = function () {
+				// If nothing is already selected, select cell
+				if (something.activeCell === null) {
+					something.selectCell(cell);
+				} else { // If something is already selected
+					// Unselect if the selected cell is clicked again
+					if (cell === something.activeCell) {
+						something.unselectCell(cell);
+					} else { // Otherwise, unselect original and select new cell
+						something.unselectCell(something.activeCell);
+						something.selectCell(cell);
+					}
+				}			
+			};
 		});
 
 		for (var piece in this.pieces) {
@@ -153,15 +171,27 @@ function Board () {
 		}
 	};
 	this.displayPiece = function (p) {
-		this.grid[p.vertical][p.horizontal].appendChild(p.element);
-		this.grid[p.vertical][p.horizontal].occupied = true;
+		var cell = this.grid[p.vertical][p.horizontal];
+		cell.appendChild(p.element);
+		cell.piece = p;
 	};
 	this.removePiece = function (p) {
-		this.grid[p.vertical][p.horizontal].removeChild(p.element);
-		this.grid[p.vertical][p.horizontal].occupied = false;
+		var cell = this.grid[p.vertical][p.horizontal];
+		cell.removeChild(p.element);
+		cell.piece = null;
 	};
 	this.inactivatePiece = function (p) {
 		p.active = false;
+	};
+	this.selectCell = function (cell) {
+		cell.selected = true;
+		appendClass(cell.piece.element, 'active');
+		this.activeCell = cell;
+	};
+	this.unselectCell = function (cell) {
+		cell.selected = false;
+		removeClass(cell.piece.element, 'active');
+		this.activeCell = null;
 	};
 }
 
@@ -185,7 +215,7 @@ function Piece (side, rank, active, v, h) {
 // Functions that create HTML elements
 function createPieceElement (side, rank) {
 	var e = document.createElement('div');
-	e.setAttribute('class','piece ' + side);
+	e.setAttribute('class', side);
 	e.innerHTML = ranks[rank].elementText;
 	return e;
 }
@@ -238,6 +268,15 @@ function createPieces () {
 	return p;
 }
 
+function loopThroughGrid (grid, callback) {
+	for (var i = 0; i < grid.length; i++) {
+		var row = grid[i];
+		for (var j = 0; j < row.length; j++) {
+			callback(row[j]);
+		}
+	}
+}
+
 // Utility functions
 function inRange (i) {
 	if (i >= 0 || i < 8) {
@@ -247,12 +286,20 @@ function inRange (i) {
 	}
 }
 
-function loopThroughGrid (grid, callback) {
-	for (var i = 0; i < grid.length; i++) {
-		var row = grid[i];
-		for (var j = 0; j < row.length; j++) {
-			callback(row[j]);
-		}
+function appendClass (e, newClass) {
+	if (e.hasAttribute('class')) {
+		e.setAttribute('class', e.getAttribute('class') + ' ' + newClass);
+	} else {
+		e.setAttribute('class', newClass);
+	}
+}
+
+function removeClass (e, oldClass) {
+	if (e.hasAttribute('class')) {
+		var c =  e.getAttribute('class'),
+			re =  new RegExp(oldClass, 'i');
+		c = c.replace(re, '');
+		e.setAttribute('class', c);
 	}
 }
 // End utility functions
