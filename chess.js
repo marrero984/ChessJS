@@ -151,37 +151,36 @@ function Board () {
 				cell.horizontal = j;
 				cell.selected = false;
 				cell.addEventListener('click', function() {
-					clickCell(this, b);
+					clickCell(this, b.activeCell);
 				});
+				cell.displayPiece = function (p) {
+					this.appendChild(p.element);
+					this.piece = p;
+				};
+				cell.removePiece = function (p) {
+					this.removeChild(p.element);
+					this.piece = null;
+				};
+				cell.select = function () {
+					this.selected = true;
+					appendClass(this.piece.element, 'active');
+					b.activeCell = this;
+				};
+				cell.unselect = function () {
+					this.selected = false;
+					removeClass(this.piece.element, 'active');
+					b.activeCell = null;
+				};
 			}
 		}
 
 		for (var piece in this.pieces) {
-			if (this.pieces[piece].active) {
-				this.displayPiece(this.pieces[piece]);
+			var p = this.pieces[piece];
+			if (p.active) {
+				this.grid.getCell(p.vertical, p.horizontal).displayPiece(p);
 			}
 		}
 	}; // End this.init
-	this.displayPiece = function (p) {
-		var cell = this.grid.getCell(p.vertical, p.horizontal);
-		cell.appendChild(p.element);
-		cell.piece = p;
-	};
-	this.removePiece = function (p) {
-		var cell = this.grid.getCell(p.vertical, p.horizontal);
-		cell.removeChild(p.element);
-		cell.piece = null;
-	};
-	this.selectCell = function (cell) {
-		cell.selected = true;
-		appendClass(cell.piece.element, 'active');
-		this.activeCell = cell;
-	};
-	this.unselectCell = function (cell) {
-		cell.selected = false;
-		removeClass(cell.piece.element, 'active');
-		this.activeCell = null;
-	};
 }
 
 function Piece (side, rank, active, v, h) {
@@ -246,35 +245,34 @@ function createPieces () {
 }
 
 // Decision tree for what to do when a cell is clicked
-function clickCell (cell, b) {
+function clickCell (clickedCell, activeCell) {
 	// If nothing is already selected
-	if (b.activeCell === null) {
+	if (activeCell === null) {
 		// Check if new cell is occupied
-		if (cell.piece !== null) {
-			b.selectCell(cell);
+		if (clickedCell.piece !== null) {
+			clickedCell.select();
 		} // Do nothing if empty cell is clicked and no active cell
 	} else { // If board is already selected, always unselect original
-		var origCell = b.activeCell;
-		b.unselectCell(origCell);
+		activeCell.unselect();
 		// Is it the same cell twice
-		if (cell !== origCell) { // If it is a new cell, get piece to move
-			var pieceToMove = origCell.piece;
+		if (clickedCell !== activeCell) { // If it is a new cell, get piece to move
+			var pieceToMove = activeCell.piece;
 			// Check if destination cell is occupied
-			if (cell.piece !== null) {
+			if (clickedCell.piece !== null) {
 				// Check if original piece and new piece are same side
-				if (cell.piece.side === origCell.piece.side) {
-					b.selectCell(cell);
+				if (clickedCell.piece.side === activeCell.piece.side) {
+					clickedCell.select();
 				} else { // If opposite sides, attack
-					cell.piece.active = false;
-					b.removePiece(cell.piece);
-					b.removePiece(pieceToMove);
-					pieceToMove.move(cell.vertical, cell.horizontal);
-					b.displayPiece(pieceToMove);
+					clickedCell.piece.active = false;
+					clickedCell.removePiece(clickedCell.piece);
+					activeCell.removePiece(pieceToMove);
+					pieceToMove.move(clickedCell.vertical, clickedCell.horizontal);
+					clickedCell.displayPiece(pieceToMove);
 				}
 			} else { // If new cell is empty, move
-				b.removePiece(pieceToMove);
-				pieceToMove.move(cell.vertical, cell.horizontal);
-				b.displayPiece(pieceToMove);
+				activeCell.removePiece(pieceToMove);
+				pieceToMove.move(clickedCell.vertical, clickedCell.horizontal);
+				clickedCell.displayPiece(pieceToMove);
 			}
 		}
 	}
