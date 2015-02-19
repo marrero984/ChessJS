@@ -125,15 +125,16 @@ var ranks = {
 
 function Board () {
 	this.pieces = {};
-	this.grid = [];
+	this.grid = createBoard();
+	this.grid.getCell = function (v, h) {
+		return this.childNodes[v].childNodes[h];
+	};
 	this.activeCell = null;
 	// Attaches board elements to specified ID
 	this.embed = function (elementID) {
 		var e = document.getElementById(elementID);
 		if (e !== null){
-			var b = createBoard();		
-			this.grid = getGrid(b);
-			e.appendChild(b);			
+			e.appendChild(this.grid);			
 		}
 	};
 	this.init = function () {
@@ -142,46 +143,33 @@ function Board () {
 			this.pieces = createPieces();
 		}
 
-		// TODO: rename something
-		var something = this;
-		// Ensure all cells are set to unoccupied before displaying pieces
-		loopThroughGrid(this.grid, function (cell) {
-			cell.piece = null;
-			cell.selected = false;
-			cell.onclick = function () {
-				// If nothing is already selected, select cell
-				if (something.activeCell === null) {
-					something.selectCell(cell);
-				} else { // If something is already selected
-					// Unselect if the selected cell is clicked again
-					if (cell === something.activeCell) {
-						something.unselectCell(cell);
-					} else { // Otherwise, unselect original and select new cell
-						something.unselectCell(something.activeCell);
-						something.selectCell(cell);
-					}
-				}			
-			};
-		});
+		for (var i = 0; i < 8; i++) {
+			for (var j = 0; j < 8; j++) {
+				var cell = this.grid.getCell(i, j),
+					b = this; // Need to store this in new object to pass inside cellClick since 'this' loses scope
+				cell.piece = null;
+				cell.selected = false;
+				cell.addEventListener('click', function() {
+					clickCell(this, b);
+				});
+			}
+		}
 
 		for (var piece in this.pieces) {
 			if (this.pieces[piece].active) {
 				this.displayPiece(this.pieces[piece]);
 			}
 		}
-	};
+	}; // End this.init
 	this.displayPiece = function (p) {
-		var cell = this.grid[p.vertical][p.horizontal];
+		var cell = this.grid.getCell(p.vertical, p.horizontal);
 		cell.appendChild(p.element);
 		cell.piece = p;
 	};
 	this.removePiece = function (p) {
-		var cell = this.grid[p.vertical][p.horizontal];
+		var cell = this.grid.getCell(p.vertical, p.horizontal);
 		cell.removeChild(p.element);
 		cell.piece = null;
-	};
-	this.inactivatePiece = function (p) {
-		p.active = false;
 	};
 	this.selectCell = function (cell) {
 		cell.selected = true;
@@ -206,9 +194,10 @@ function Piece (side, rank, active, v, h) {
 		if (this.rank === 'pawn') {
 			this.rank = newRank;
 			this.element = createPieceElement(this.side, this.rank);
-		} else {
-			console.log('Can only upgrade pawns');
 		}
+	};
+	this.toggleActive = function () {
+		this.active ? this.active = false : this.active = true;
 	};
 }
 
@@ -235,20 +224,6 @@ function createBoard() {
 }
 // End functions that create HTML elements
 
-// Returns just the cell elements from the board
-function getGrid (b) {
-	var g = [];
-	for (var i = 0; i < b.childNodes.length; i++) {
-		var r = b.childNodes[i],
-			row = [];
-		for (var j = 0; j < r.childNodes.length; j++) {
-			row.push(r.childNodes[j]);
-		}
-		g.push(row);
-	}
-	return g;
-}
-
 // Returns object of 32 initialized Piece objects
 function createPieces () {
 	var p = {};
@@ -256,6 +231,7 @@ function createPieces () {
 		for (var i = 0; i < 2; i++) {
 			var side = sides[i];
 			for (var j = 0; j < ranks[rank].count; j++) {
+				// TODO: see if possible to remove name since not being used
 				var name = side + rank + j,
 					rs = ranks[rank][side],
 					active = rs.active[j],
@@ -268,14 +244,32 @@ function createPieces () {
 	return p;
 }
 
-function loopThroughGrid (grid, callback) {
-	for (var i = 0; i < grid.length; i++) {
-		var row = grid[i];
-		for (var j = 0; j < row.length; j++) {
-			callback(row[j]);
+// Decision tree for what to do when a cell is clicked
+function clickCell (cell, b) {
+	// If nothing is already selected
+	if (b.activeCell === null) {
+		// Check if new cell is occupied
+		if (cell.piece !== null) {
+			b.selectCell(cell);
+		} // Do nothing if empty cell is clicked and no active cell
+	} else { // If board is already selected, always unselect original
+		var origCell = b.activeCell;
+		b.unselectCell(origCell);
+		// Is it the same cell twice
+		if (cell !== origCell) { // If it is a new cell, check if it is occupied
+			if (cell.piece !== null) {
+				// Check if original piece and new piece are same side
+				if (cell.piece.side === origCell.piece.side) {
+					b.selectCell(cell);
+				} else { // If opposite sides, attack
+					// TODO
+				}
+			} else { // If new cell is empty, move
+				// TODO
+			}
 		}
 	}
-}
+} // End cellClick
 
 // Utility functions
 function inRange (i) {
@@ -296,8 +290,9 @@ function appendClass (e, newClass) {
 
 function removeClass (e, oldClass) {
 	if (e.hasAttribute('class')) {
+		// This assumes oldClass is not the first class listed
 		var c =  e.getAttribute('class'),
-			re =  new RegExp(oldClass, 'i');
+			re =  new RegExp(' ' + oldClass, 'i');
 		c = c.replace(re, '');
 		e.setAttribute('class', c);
 	}
