@@ -124,7 +124,7 @@ var ranks = {
 })();
 
 function Board () {
-	this.pieces = {};
+	this.pieces = [];
 	this.grid = createBoard();
 	this.grid.getCell = function (v, h) {
 		return this.childNodes[v].childNodes[h];
@@ -226,18 +226,17 @@ function createBoard() {
 
 // Returns object of 32 initialized Piece objects
 function createPieces () {
-	var p = {};
+	var p = [];
 	for (var rank in ranks) {
 		for (var i = 0; i < 2; i++) {
 			var side = sides[i];
 			for (var j = 0; j < ranks[rank].count; j++) {
 				// TODO: see if possible to remove name since not being used
-				var name = side + rank + j,
-					rs = ranks[rank][side],
+				var rs = ranks[rank][side],
 					active = rs.active[j],
 					v = rs.initPostions['vertical'][j],
 					h = rs.initPostions['horizontal'][j];
-				p[name] = new Piece(side, rank, active, v, h);
+				p.push(new Piece(side, rank, active, v, h));
 			}
 		}
 	}
