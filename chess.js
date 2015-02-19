@@ -138,7 +138,6 @@ function Board () {
 		}
 	};
 	this.init = function () {
-		// Check if pieces already exist
 		if (Object.keys(this.pieces).length === 0) {
 			this.pieces = createPieces();
 		}
@@ -148,6 +147,8 @@ function Board () {
 				var cell = this.grid.getCell(i, j),
 					b = this; // Need to store this in new object to pass inside cellClick since 'this' loses scope
 				cell.piece = null;
+				cell.vertical = i;
+				cell.horizontal = j;
 				cell.selected = false;
 				cell.addEventListener('click', function() {
 					clickCell(this, b);
@@ -190,14 +191,15 @@ function Piece (side, rank, active, v, h) {
 	this.vertical = v;
 	this.horizontal = h;
 	this.element = createPieceElement(this.side, this.rank);
+	this.move = function (v, h) {
+		this.vertical = v;
+		this.horizontal = h;
+	};
 	this.upgrade = function (newRank) {
 		if (this.rank === 'pawn') {
 			this.rank = newRank;
 			this.element = createPieceElement(this.side, this.rank);
 		}
-	};
-	this.toggleActive = function () {
-		this.active ? this.active = false : this.active = true;
 	};
 }
 
@@ -255,16 +257,24 @@ function clickCell (cell, b) {
 		var origCell = b.activeCell;
 		b.unselectCell(origCell);
 		// Is it the same cell twice
-		if (cell !== origCell) { // If it is a new cell, check if it is occupied
+		if (cell !== origCell) { // If it is a new cell, get piece to move
+			var pieceToMove = origCell.piece;
+			// Check if destination cell is occupied
 			if (cell.piece !== null) {
 				// Check if original piece and new piece are same side
 				if (cell.piece.side === origCell.piece.side) {
 					b.selectCell(cell);
 				} else { // If opposite sides, attack
-					// TODO
+					cell.piece.active = false;
+					b.removePiece(cell.piece);
+					b.removePiece(pieceToMove);
+					pieceToMove.move(cell.vertical, cell.horizontal);
+					b.displayPiece(pieceToMove);
 				}
 			} else { // If new cell is empty, move
-				// TODO
+				b.removePiece(pieceToMove);
+				pieceToMove.move(cell.vertical, cell.horizontal);
+				b.displayPiece(pieceToMove);
 			}
 		}
 	}
