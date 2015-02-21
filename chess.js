@@ -1,117 +1,39 @@
 // Black pawns always move down, white pawns always up
 
-// TODO: eliminate sides array if possible
 // TODO: move ranks object to external JSON file
-var sides = ['white','black'];
-var ranks = {
-	'Pawn': {
-		'count': 8,
-		'elementText': 'P',
-		'black': {
-			'initPostions': {
-				'vertical': [1, 1, 1, 1, 1, 1, 1, 1],
-				'horizontal': [0, 1, 2, 3, 4, 5, 6, 7]
-			},
-			'active': [true, true, true, true, true, true, true, true]
-		},
-		'white': {
-			'initPostions': {
-				'vertical': [6, 6, 6, 6, 6, 6, 6, 6],
-				'horizontal': [0, 1, 2, 3, 4, 5, 6, 7]
-			},
-			'active': [true, true, true, true, true, true, true, true]
-		}
-	},
-	'Bishop': {
-		'count': 2,
-		'elementText': 'B',
-		'black': {
-			'initPostions': {
-				'vertical': [0, 0,],
-				'horizontal': [2, 5]
-			},
-			'active': [true, true]
-		},
-		'white': {
-			'initPostions': {
-				'vertical': [7, 7],
-				'horizontal': [2, 5]
-			},
-			'active': [true, true]
-		}
-	},
-	'Knight': {
-		'count': 2,
-		'elementText': 'Kn',
-		'black': {
-			'initPostions': {
-				'vertical': [0, 0],
-				'horizontal': [1, 6]
-			},
-			'active': [true, true]
-		},
-		'white': {
-			'initPostions': {
-				'vertical': [7, 7],
-				'horizontal': [1, 6]
-			},
-			'active': [true, true]
-		}
-	},
-	'Rook': {
-		'count': 2,
-		'elementText': 'R',
-		'black': {
-			'initPostions': {
-				'vertical': [0, 0],
-				'horizontal': [0, 7]
-			},
-			'active': [true, true]
-		},
-		'white': {
-			'initPostions': {
-				'vertical': [7, 7],
-				'horizontal': [0, 7]
-			},
-			'active': [true, true]
-		}
-	},
-	'Queen': {
-		'count': 1,
-		'elementText': 'Q',
-		'black': {
-			'initPostions': {
-				'vertical': [0],
-				'horizontal': [3]
-			},
-			'active': [true]
-		},
-		'white': {
-			'initPostions': {
-				'vertical': [7],
-				'horizontal': [3]
-			},
-			'active': [true]
-		}
-	},
-	'King': {
-		'count': 1,
-		'elementText': 'K',
-		'black': {
-			'initPostions': {
-				'vertical': [0],
-				'horizontal': [4]
-			},
-			'active': [true]
-		},
-		'white': {
-			'initPostions': {
-				'vertical': [7],
-				'horizontal': [4]
-			},
-			'active': [true]
-		}
-	}
+var initialPositions = {
+	'a8': 'black rook',
+	'b8': 'black knight',
+	'c8': 'black bishop',
+	'd8': 'black queen',
+	'e8': 'black king',
+	'f8': 'black bishop',
+	'g8': 'black knight',
+	'h8': 'black rook',
+	'a7': 'black pawn',
+	'b7': 'black pawn',
+	'c7': 'black pawn',
+	'd7': 'black pawn',
+	'e7': 'black pawn',
+	'f7': 'black pawn',
+	'g7': 'black pawn',
+	'h7': 'black pawn',
+	'a2': 'white pawn',
+	'b2': 'white pawn',
+	'c2': 'white pawn',
+	'd2': 'white pawn',
+	'e2': 'white pawn',
+	'f2': 'white pawn',
+	'g2': 'white pawn',
+	'h2': 'white pawn',
+	'a1': 'white rook',
+	'b1': 'white knight',
+	'c1': 'white bishop',
+	'd1': 'white queen',
+	'e1': 'white king',
+	'f1': 'white bishop',
+	'g1': 'white knight',
+	'h1': 'white rook',
 };
 
 (function () {
@@ -130,7 +52,6 @@ function Board () {
 		return this.childNodes[v].childNodes[h];
 	};
 	this.activeCell = null;
-	// Attaches board elements to specified ID
 	this.embed = function (elementID) {
 		var e = document.getElementById(elementID);
 		if (e !== null){
@@ -138,79 +59,58 @@ function Board () {
 		}
 	};
 	this.init = function () {
-		if (Object.keys(this.pieces).length === 0) {
-			this.pieces = createPieces();
-		}
-
 		for (var i = 0; i < 8; i++) {
 			for (var j = 0; j < 8; j++) {
 				var cell = this.grid.getCell(i, j),
-					b = this; // Need to store this in new object to pass inside cellClick since 'this' loses scope
+					b = this;
 				initCell(cell, b, i, j);
 			}
 		}
 
-		for (var piece in this.pieces) {
-			var p = this.pieces[piece];
-			if (p.active) {
-				this.grid.getCell(p.vertical, p.horizontal).displayPiece(p);
-			}
+		for (var ip in initialPositions) {
+			var piece = new Piece(initialPositions[ip].substring(0,5), initialPositions[ip].substring(6)),
+				position = convertToArrayCoordinates(ip),
+				c = this.grid.getCell(position[1], position[0]);
+			c.addPiece(piece);
 		}
 	}; // End this.init
 	this.cellClick = function (clickedCell) {
 		var activeCell = this.activeCell;
-		// If nothing is already selected
 		if (activeCell === null) {
-			// Check if new cell is occupied
 			if (clickedCell.piece !== null) {
 				clickedCell.select();
 			} // Do nothing if empty cell is clicked and no active cell
-		} else { // If board is already selected, always unselect original
+		} else {
 			activeCell.unselect();
-			// Is it the same cell twice
-			if (clickedCell !== activeCell) { // If it is a new cell, get piece to move
-				var pieceToMove = activeCell.piece;
-				// Check if destination cell is occupied
+			if (clickedCell !== activeCell) {
 				if (clickedCell.piece !== null) {
-					// Check if original piece and new piece are same side
 					if (clickedCell.piece.side === activeCell.piece.side) {
 						clickedCell.select();
-					} else { // If opposite sides, attack
-						clickedCell.piece.active = false;
-						clickedCell.removePiece(clickedCell.piece);
-						activeCell.removePiece(pieceToMove);
-						pieceToMove.move(clickedCell.vertical, clickedCell.horizontal);
-						clickedCell.displayPiece(pieceToMove);
+					} else {
+						activeCell.attack(clickedCell);
 					}
-				} else { // If new cell is empty, move
-					activeCell.removePiece(pieceToMove);
-					pieceToMove.move(clickedCell.vertical, clickedCell.horizontal);
-					clickedCell.displayPiece(pieceToMove);
+				} else { 
+					activeCell.move(clickedCell);
 				}
 			}
 		}
 	}; // End cellClick
 }
 
-function Piece (side, rank, active, v, h) {
+function Piece (side, rank) {
 	this.rank = rank;
 	this.side = side;
-	this.active = active;
-	this.vertical = v;
-	this.horizontal = h;
+	this.active = true;
 	this.element = createPieceElement(this.side, this.rank);
-	this.move = function (v, h) {
-		this.vertical = v;
-		this.horizontal = h;
-	};
 	this.upgrade = function (newRank) {
-		if (this.rank === 'pawn') {
+		if (this.rank === 'Pawn') {
 			this.rank = newRank;
 			this.element = createPieceElement(this.side, this.rank);
 		}
 	};
 }
 
+// Takes a div element and turns it into an object
 function initCell (cell, board, v, h) {
 	cell.piece = null;
 	cell.vertical = v;
@@ -219,7 +119,7 @@ function initCell (cell, board, v, h) {
 	cell.addEventListener('click', function() {
 		board.cellClick(this);
 	});
-	cell.displayPiece = function (p) {
+	cell.addPiece = function (p) {
 		this.appendChild(p.element);
 		this.piece = p;
 	};
@@ -237,13 +137,31 @@ function initCell (cell, board, v, h) {
 		removeClass(this.piece.element, 'active');
 		board.activeCell = null;
 	};
+	cell.move = function (clickedCell) {
+		var pieceToMove = this.piece;
+		this.removePiece(pieceToMove);
+		clickedCell.addPiece(pieceToMove);
+	};
+	cell.attack = function (clickedCell) {
+		clickedCell.piece.active = false;
+		clickedCell.removePiece(clickedCell.piece);
+		this.move(clickedCell);
+	};
 }
 
 // Functions that create HTML elements
 function createPieceElement (side, rank) {
-	var e = document.createElement('div');
+	var e = document.createElement('div'),
+		displayName = {
+			'pawn': 'P',
+			'bishop': 'B',
+			'knight': 'Kn',
+			'rook': 'R',
+			'queen': 'Q',
+			'king': 'K'
+		};
 	e.setAttribute('class', side);
-	e.innerHTML = ranks[rank].elementText;
+	e.innerHTML = displayName[rank.toLowerCase()];
 	return e;
 }
 
@@ -262,25 +180,6 @@ function createBoard() {
 }
 // End functions that create HTML elements
 
-// Returns object of 32 initialized Piece objects
-function createPieces () {
-	var p = [];
-	for (var rank in ranks) {
-		for (var i = 0; i < 2; i++) {
-			var side = sides[i];
-			for (var j = 0; j < ranks[rank].count; j++) {
-				// TODO: see if possible to remove name since not being used
-				var rs = ranks[rank][side],
-					active = rs.active[j],
-					v = rs.initPostions['vertical'][j],
-					h = rs.initPostions['horizontal'][j];
-				p.push(new Piece(side, rank, active, v, h));
-			}
-		}
-	}
-	return p;
-}
-
 // Utility functions
 function inRange (i) {
 	if (i >= 0 || i < 8) {
@@ -290,21 +189,26 @@ function inRange (i) {
 	}
 }
 
-function appendClass (e, newClass) {
-	if (e.hasAttribute('class')) {
-		e.setAttribute('class', e.getAttribute('class') + ' ' + newClass);
+function appendClass (el, newClass) {
+	if (el.hasAttribute('class')) {
+		el.setAttribute('class', el.getAttribute('class') + ' ' + newClass);
 	} else {
-		e.setAttribute('class', newClass);
+		el.setAttribute('class', newClass);
 	}
 }
 
-function removeClass (e, oldClass) {
-	if (e.hasAttribute('class')) {
+function removeClass (el, oldClass) {
+	if (el.hasAttribute('class')) {
 		// This assumes oldClass is not the first class listed
-		var c =  e.getAttribute('class'),
+		var c =  el.getAttribute('class'),
 			re =  new RegExp(' ' + oldClass, 'i');
 		c = c.replace(re, '');
-		e.setAttribute('class', c);
+		el.setAttribute('class', c);
 	}
+}
+
+function convertToArrayCoordinates (ipName) {
+	var alphaPosition = ['a','b','c','d','e','f','g','h'];
+	return [alphaPosition.indexOf(ipName.substring(0, 1)), (ipName.substring(1) - 1)];
 }
 // End utility functions

@@ -10,7 +10,7 @@ body {
 .grid {
 	margin-left: auto;
 	margin-right: auto;
-	max-width: 750px;
+	max-width: 700px;
 }
 
 	.grid > div {
@@ -27,7 +27,7 @@ body {
 		.grid > div:last-child {
 			border-bottom: 1px solid #555;
 		}
-
+			/*Cell level*/
 			.grid > div > div {
 				position: relative;
 				flex: 1;
@@ -45,7 +45,7 @@ body {
 				.grid > div:nth-child(even) > div:nth-child(even) {
 					background-color: black;
 				}
-
+				/*Piece level*/
 				.grid > div > div > div {
 					position: absolute;
 					top: 0;
@@ -53,13 +53,12 @@ body {
 					bottom: 0;
 					right: 0;
 					text-align: center;
-					margin: auto;
+					margin: 0;
 					cursor: pointer;
 				}
 
 .black {
 	color: #1abc9c;
-	border-color: #1abc9c;
 }
 
 .white {
