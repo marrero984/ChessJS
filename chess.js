@@ -1,6 +1,5 @@
 // Black pawns always move down, white pawns always up
 
-// TODO: move ranks object to external JSON file
 var initialPositions = {
 	'a8': 'black rook',
 	'b8': 'black knight',
@@ -36,65 +35,99 @@ var initialPositions = {
 	'h1': 'white rook',
 };
 
-(function () {
-	var board = new Board();
-	board.embed('board');
-	board.init();
+var alphaPosition = ['a','b','c','d','e','f','g','h'];
 
-	// TODO: Remove these tests
-	console.log('end');
+(function () {
+    var board = new Board();
+	board.init('board');
 })();
 
 function Board () {
+	var activeCell = null;
 	this.pieces = [];
+	this.history = [];
 	this.grid = createBoard();
-	this.grid.getCell = function (v, h) {
-		return this.childNodes[v].childNodes[h];
+	this.getCell = function (v, h) {
+		return this.grid.childNodes[v].childNodes[h];
 	};
-	this.activeCell = null;
-	this.embed = function (elementID) {
+	this.init = function (elementID) {
+		// Embed
 		var e = document.getElementById(elementID);
 		if (e !== null){
-			e.appendChild(this.grid);			
+			e.appendChild(this.grid);	
 		}
-	};
-	this.init = function () {
+		// Takes each html element for cell and adds properties and functions
 		for (var i = 0; i < 8; i++) {
 			for (var j = 0; j < 8; j++) {
-				var cell = this.grid.getCell(i, j),
-					b = this;
-				initCell(cell, b, i, j);
+				var cell = this.getCell(i, j);
+				initCell(cell, i, j);
 			}
 		}
-
+		// Creates all the piece objects and adds them to appropriate cell
 		for (var ip in initialPositions) {
 			var piece = new Piece(initialPositions[ip].substring(0,5), initialPositions[ip].substring(6)),
 				position = convertToArrayCoordinates(ip),
-				c = this.grid.getCell(position[1], position[0]);
+				c = this.getCell(position[0], position[1]);
 			c.addPiece(piece);
 		}
 	}; // End this.init
-	this.cellClick = function (clickedCell) {
-		var activeCell = this.activeCell;
-		if (activeCell === null) {
-			if (clickedCell.piece !== null) {
-				clickedCell.select();
-			} // Do nothing if empty cell is clicked and no active cell
-		} else {
-			activeCell.unselect();
-			if (clickedCell !== activeCell) {
-				if (clickedCell.piece !== null) {
-					if (clickedCell.piece.side === activeCell.piece.side) {
-						clickedCell.select();
-					} else {
-						activeCell.attack(clickedCell);
+
+	// Takes a div element and turns it into an object
+	function initCell (cell, v, h) {
+		cell.piece = null;
+		cell.vertical = v;
+		cell.horizontal = h;
+		cell.selected = false;
+		cell.addEventListener('click', function() {
+			var ac = activeCell;
+			if (ac === null) {
+				if (this.piece !== null) {
+					this.highlight('active');
+				} // Do nothing if empty cell is clicked and no active cell
+			} else {
+				ac.unHighlight('active');
+				if (this !== ac) {
+					if (this.piece !== null) {
+						if (this.piece.side === ac.piece.side) {
+							this.highlight('active');
+						} else {
+							ac.attack(this);
+						}
+					} else { 
+						ac.moveTo(this);
 					}
-				} else { 
-					activeCell.move(clickedCell);
 				}
 			}
-		}
-	}; // End cellClick
+		});
+		cell.addPiece = function (p) {
+			this.appendChild(p.element);
+			this.piece = p;
+		};
+		cell.removePiece = function (p) {
+			this.removeChild(p.element);
+			this.piece = null;
+		};
+		cell.highlight = function (cssClass) {
+			this.selected = true;
+			appendClass(this.piece.element, cssClass);
+			activeCell = this;
+		};
+		cell.unHighlight = function (cssClass) {
+			this.selected = false;
+			removeClass(this.piece.element, cssClass);
+			activeCell = null;
+		};
+		cell.moveTo = function (clickedCell) {
+			var pieceToMove = this.piece;
+			this.removePiece(pieceToMove);
+			clickedCell.addPiece(pieceToMove);
+		};
+		cell.attack = function (clickedCell) {
+			clickedCell.piece.active = false;
+			clickedCell.removePiece(clickedCell.piece);
+			this.moveTo(clickedCell);
+		};
+	}
 }
 
 function Piece (side, rank) {
@@ -110,58 +143,20 @@ function Piece (side, rank) {
 	};
 }
 
-// Takes a div element and turns it into an object
-function initCell (cell, board, v, h) {
-	cell.piece = null;
-	cell.vertical = v;
-	cell.horizontal = h;
-	cell.selected = false;
-	cell.addEventListener('click', function() {
-		board.cellClick(this);
-	});
-	cell.addPiece = function (p) {
-		this.appendChild(p.element);
-		this.piece = p;
-	};
-	cell.removePiece = function (p) {
-		this.removeChild(p.element);
-		this.piece = null;
-	};
-	cell.select = function () {
-		this.selected = true;
-		appendClass(this.piece.element, 'active');
-		board.activeCell = this;
-	};
-	cell.unselect = function () {
-		this.selected = false;
-		removeClass(this.piece.element, 'active');
-		board.activeCell = null;
-	};
-	cell.move = function (clickedCell) {
-		var pieceToMove = this.piece;
-		this.removePiece(pieceToMove);
-		clickedCell.addPiece(pieceToMove);
-	};
-	cell.attack = function (clickedCell) {
-		clickedCell.piece.active = false;
-		clickedCell.removePiece(clickedCell.piece);
-		this.move(clickedCell);
-	};
-}
-
 // Functions that create HTML elements
 function createPieceElement (side, rank) {
-	var e = document.createElement('div'),
-		displayName = {
-			'pawn': 'P',
-			'bishop': 'B',
-			'knight': 'Kn',
-			'rook': 'R',
-			'queen': 'Q',
-			'king': 'K'
-		};
+	var e = document.createElement('div');
+	var	notationName = {
+		'pawn': 'P',
+		'bishop': 'B',
+		'knight': 'N',
+		'rook': 'R',
+		'queen': 'Q',
+		'king': 'K'
+	};
 	e.setAttribute('class', side);
-	e.innerHTML = displayName[rank.toLowerCase()];
+	// Lowercase is not needed, but included as a just-in-case
+	e.innerHTML = notationName[rank.toLowerCase()];
 	return e;
 }
 
@@ -207,8 +202,11 @@ function removeClass (el, oldClass) {
 	}
 }
 
-function convertToArrayCoordinates (ipName) {
-	var alphaPosition = ['a','b','c','d','e','f','g','h'];
-	return [alphaPosition.indexOf(ipName.substring(0, 1)), (ipName.substring(1) - 1)];
+function convertToArrayCoordinates (boardPostion) {
+	return [(boardPostion.substring(1) - 1), alphaPosition.indexOf(boardPostion.substring(0, 1))];
+}
+
+function convertToAlgebraicNotation (v, h) {
+	return alphaPosition[h] + (v + 1);
 }
 // End utility functions
