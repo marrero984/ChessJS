@@ -41,8 +41,8 @@ body {
 					padding-top: 100%; 	/* initial ratio of 1:1*/
 				}
 
-				.grid > div:nth-child(odd) > div:nth-child(odd),
-				.grid > div:nth-child(even) > div:nth-child(even) {
+				.grid > div:nth-child(odd) > div:nth-child(even),
+				.grid > div:nth-child(even) > div:nth-child(odd) {
 					background-color: black;
 				}
 				/*Piece level*/
