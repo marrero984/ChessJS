@@ -43,23 +43,20 @@ var alphaPosition = ['a','b','c','d','e','f','g','h'];
 })();
 
 function Board () {
-	var activeCell = null;
-	this.pieces = [];
-	this.history = [];
-	this.grid = createBoard();
-	this.getCell = function (v, h) {
-		return this.grid.childNodes[v].childNodes[h];
-	};
+	var activeCell = null,
+		grid = createBoard(),
+		history = [];
+
 	this.init = function (elementID) {
 		// Embed
 		var e = document.getElementById(elementID);
 		if (e !== null){
-			e.appendChild(this.grid);	
+			e.appendChild(grid);	
 		}
 		// Takes each html element for cell and adds properties and functions
 		for (var i = 0; i < 8; i++) {
 			for (var j = 0; j < 8; j++) {
-				var cell = this.getCell(i, j);
+				var cell = getCell(i, j);
 				initCell(cell, i, j);
 			}
 		}
@@ -67,10 +64,18 @@ function Board () {
 		for (var ip in initialPositions) {
 			var piece = new Piece(initialPositions[ip].substring(0,5), initialPositions[ip].substring(6)),
 				position = convertToArrayCoordinates(ip),
-				c = this.getCell(position[0], position[1]);
+				c = getCell(position[0], position[1]);
 			c.addPiece(piece);
 		}
 	}; // End this.init
+
+	function getCell (v, h) {
+		if (inRange(v) && inRange(h)) {
+			return grid.childNodes[v].childNodes[h];
+		} else {
+			return false;
+		}
+	}
 
 	// Takes a div element and turns it into an object
 	function initCell (cell, v, h) {
@@ -98,7 +103,7 @@ function Board () {
 					}
 				}
 			}
-		});
+		}, false);
 		cell.addPiece = function (p) {
 			this.appendChild(p.element);
 			this.piece = p;
@@ -126,6 +131,31 @@ function Board () {
 			clickedCell.piece.active = false;
 			clickedCell.removePiece(clickedCell.piece);
 			this.moveTo(clickedCell);
+		};
+		cell.up = function (n) {
+			return getCell(this.vertical - n, this.horizontal);
+		};
+		cell.down = function (n) {
+			return getCell(this.vertical + n, this.horizontal);
+		};
+		cell.left = function (n) {
+			return getCell(this.vertical, this.horizontal - n);
+		};
+		cell.right = function (n) {
+			return getCell(this.vertical, this.horizontal + n);
+		};
+		cell.getValidMoves = function () {
+			if (this.piece !== null) {
+				switch (this.piece.rank) {
+					case 'bishop':
+					case 'knight':
+					case 'queen':
+					case 'rook':
+					case 'pawn':
+					case 'king':
+						break;
+				}
+			}
 		};
 	}
 }
@@ -177,7 +207,7 @@ function createBoard() {
 
 // Utility functions
 function inRange (i) {
-	if (i >= 0 || i < 8) {
+	if (i >= 0 && i < 8) {
 		return true;
 	} else {
 		return false;
